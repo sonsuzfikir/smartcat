@@ -1,0 +1,9 @@
+name: 'Smartcat translator'
+description: 'Smartcat translator plugin for TMGMT module. For details, visit <a href="https://developer.smartcat.com">developer.smartcat.com</a>!'
+package: 'Translation Management'
+core: 8.x
+core_version_requirement: ^8 || ^9
+dependencies:
+  - tmgmt (>=8.x-1.0-rc2)
+  - tmgmt_file
+type: module

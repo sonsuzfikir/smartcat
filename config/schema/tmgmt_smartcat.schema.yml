@@ -1,0 +1,12 @@
+tmgmt.translator.settings.smartcat:
+  type: tmgmt.translator_base
+  mapping:
+    account_id:
+      type: string
+      label: Smartcat Account ID
+    api_key:
+      type: string
+      label: Smartcat API Key
+    server:
+      type: string
+      label: Smartcat Server

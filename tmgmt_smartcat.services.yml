@@ -1,0 +1,5 @@
+services:
+  tmgmt_smartcat.document:
+    class: Drupal\tmgmt_smartcat\Service\Document
+    arguments:
+      - '@tmgmt.data'

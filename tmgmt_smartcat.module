@@ -1,0 +1,18 @@
+<?php
+/**
+ * Drupal Plugin - Module
+ *
+ * PHP version 5.6
+ *
+ * @category Plugins
+ * @package  Drupal
+ * @author   Mikhail Protasebich <m.protasevich@smartcat.ai>
+ */
+
+/**
+ * Run cron tasks. Implements hook_cron.
+ */
+function tmgmt_smartcat_cron() {
+  // TODO: Add cron task for checking Smartcat project status
+  // \Drupal::logger('tmgmt_smartcat')->info('Cron running');
+}

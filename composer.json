@@ -1,0 +1,14 @@
+{
+    "name": "drupal/tmgmt_smartcat",
+    "description": "Smartcat Drupal websites with the help of professional translation tools.",
+    "type": "drupal-module",
+    "homepage": "https://www.drupal.org/project/tmgmt_smartcat",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/tmgmt_smartcat",
+        "source": "http://git.drupal.org/project/tmgmt_smartcat.git"
+    },
+    "require": {
+        "php": ">=7.4",
+        "guzzlehttp/guzzle": "^7.4"
+    }
+}
