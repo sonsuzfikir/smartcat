@@ -71,10 +71,10 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
       );
       $job->reference = $projectId;
       $job->save();
-      $job->addMessage('Created a new Project in Smartcat with the id: @id', ['@id' => $projectId], 'debug');
+      $job->addMessage('A new project was created. Project ID: @id', ['@id' => $projectId], 'debug');
     } catch (ClientException $e) {
-      $job->rejected('Error create project in Smartcat. Contact us at support@smartcat.com');
-      \Drupal::logger('tmgmt_smartcat')->error('Error create project in Smartcat.');
+      $job->rejected('Failed to create a project in Smartcat. Contact us at support@smartcat.com');
+      \Drupal::logger('tmgmt_smartcat')->error('Failed to create a project in Smartcat.');
       return $job;
     }
 
@@ -118,8 +118,8 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
    * @param $type
    * @return array
    */
-  protected function prepareDataForSending(JobInterface $job, $type = 'json') {
-
+  protected function prepareDataForSending(JobInterface $job, $type = 'json')
+  {
     $files = [];
     foreach ($job->getData() as $key => $jobData) {
       $fileBaseName = $key;
@@ -129,7 +129,7 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
       $fileBaseName = preg_replace("#[[:punct:]]#", "", $fileBaseName);
       $fileContent = $this->prepareSingleDataForSending($job, $type, $key);
       if (isset($files[$fileBaseName])) {
-        $fileBaseName .= '-'.rand();
+        $fileBaseName .= '-' . rand();
       }
       $fileBaseName .= '.' . $type;
       $files[$fileBaseName] = $fileContent;
@@ -149,14 +149,13 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
   {
     $data_service = \Drupal::service('tmgmt.data');
 
-    $data = array_filter($data_service->flatten($job->getData()), function($value) {
+    $data = array_filter($data_service->flatten($job->getData()), function ($value) {
       return !(empty($value['#text']) || (isset($value['#translate']) && $value['#translate'] === FALSE));
     });
 
     if ($type === 'json') {
       $items = [];
-    }
-    else {
+    } else {
       $items = '';
     }
 
@@ -176,8 +175,7 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
 
       if ($type === 'json') {
         $items[$key] = $value['#text'];
-      }
-      else {
+      } else {
         $items .= str_replace(
           array('@key', '@text'),
           array($key, $value['#text']),
@@ -188,8 +186,7 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
 
     if ($type === 'json') {
       return json_encode($items);
-    }
-    else {
+    } else {
       return '<items>' . $items . '</items>';
     }
   }

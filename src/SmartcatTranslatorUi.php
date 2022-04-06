@@ -31,7 +31,7 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
 
     $form['registration_link'] = [
       '#type' => 'markup',
-      '#markup' => t('You can get Smartcat API credentials in your <a href="@smartcat" target="_blank" alt="Smartcat">account</a>', ['@smartcat' => 'https://smartcat.com/settings/api']),
+      '#markup' => t('You can find Account ID and API Key in your Smartcat account'),
     ];
     $form['server'] = [
       '#type' => 'select',
@@ -80,7 +80,7 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
     try {
       (new SmartcatApi($accountId, $apiKey, $server))->accountDetails();
     } catch (ClientException $e) {
-      \Drupal::logger('tmgmt_smartcat')->error(t('The "Account ID" or "API Secret Key" is not valid.'));
+      \Drupal::logger('tmgmt_smartcat')->error(t('The Account ID or API Key is invalid. Please, check the credentials and try again.'));
       $form_state->setError($wrapperSettings['api_key'], t('The "Account ID" or "API Secret Key" is not valid.'));
     }
   }

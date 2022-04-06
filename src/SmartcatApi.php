@@ -141,11 +141,11 @@ class SmartcatApi
 
   /**
    * Download document from project
-   *
+   * @message return will be bool|array
    * @param string $taskId
    * @return bool|array
    */
-  public function downloadDocument(string $taskId): bool|array
+  public function downloadDocument(string $taskId)
   {
     $response = $this->httpClient->get($this->host() . SmartcatEndpoints::DOCUMENT_EXPORT . $taskId, [
       'auth' => $this->credentials()
@@ -175,11 +175,11 @@ class SmartcatApi
 
   /**
    * Convert response to array
-   *
+   * @message return will be bool|array
    * @param ResponseInterface $response
    * @return bool|array
    */
-  public function json(ResponseInterface $response): bool|array
+  public function json(ResponseInterface $response)
   {
     $body = $response->getBody()->getContents();
     return empty($body) ? false : json_decode($body, true);
