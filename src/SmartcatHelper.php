@@ -22,7 +22,8 @@ trait SmartcatHelper
         'targetLanguages' => [$targetLang],
         'workflowStages' => [
           'Translation'
-        ]
+        ],
+        'externalTag' => 'smartcat-drupal-tmgmt'
       ])
     ];
   }
