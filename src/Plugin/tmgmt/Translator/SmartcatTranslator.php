@@ -77,7 +77,9 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
                 $stages,
                 $job->id()
             );
-            $this->setupMtEngineToSmartcatProject($projectId);
+            if ($workflowStage !== 'manual-translation') {
+                $this->setupMtEngineToSmartcatProject($projectId);
+            }
             $job->reference = $projectId;
             $job->save();
             $job->addMessage('A new project was created. Project ID: @id', ['@id' => $projectId], 'debug');

@@ -130,6 +130,7 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
             '#options' => [
                 'mt' => t('AI translation'),
                 'mt-postediting' => t('AI translation + human review'),
+                'manual-translation' => t('Manual translation'),
             ],
             '#description' => t('Please select the appropriate workflow stages for your Smartcat project'),
         ];
