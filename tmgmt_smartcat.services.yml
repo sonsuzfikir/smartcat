@@ -3,3 +3,7 @@ services:
     class: Drupal\tmgmt_smartcat\Service\Document
     arguments:
       - '@tmgmt.data'
+  tmgmt_smartcat.translations_exporter:
+    class: Drupal\tmgmt_smartcat\Services\TranslationsExporter
+    arguments:
+      - '@tmgmt.data'

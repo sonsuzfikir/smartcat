@@ -7,14 +7,24 @@
 
 namespace Drupal\tmgmt_smartcat\Plugin\tmgmt\Translator;
 
+use Drupal\Core\Entity\EntityStorageException;
 use Drupal\tmgmt\ContinuousTranslatorInterface;
 use Drupal\tmgmt\Entity\Job;
+use Drupal\tmgmt\Entity\Translator;
 use Drupal\tmgmt\JobInterface;
+use Drupal\tmgmt\JobItemInterface;
+use Drupal\tmgmt\TMGMTException;
 use Drupal\tmgmt\Translator\AvailableResult;
 use Drupal\tmgmt\TranslatorInterface;
 use Drupal\tmgmt\TranslatorPluginBase;
-use Drupal\tmgmt_smartcat\SmartcatApi;
-use GuzzleHttp\Exception\ClientException;
+use Drupal\tmgmt_smartcat\IntegrationHubClient;
+use Drupal\tmgmt_smartcat\Models\Project;
+use Drupal\tmgmt_smartcat\Models\ProjectMT;
+use Drupal\tmgmt_smartcat\Models\TranslatableItem;
+use Drupal\tmgmt_smartcat\Models\TranslatableItemSegment;
+use Drupal\tmgmt_smartcat\Services\SmartcatDocument;
+use Drupal\tmgmt_smartcat\SmartcatClient;
+use GuzzleHttp\Exception\RequestException;
 
 /**
  * Smartcat translation plugin controller.
@@ -29,25 +39,21 @@ use GuzzleHttp\Exception\ClientException;
  */
 class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTranslatorInterface
 {
-    /**
-     * @var SmartcatApi
-     */
-    private SmartcatApi $smartcatApi;
+    private SmartcatClient $cat;
+
+    private IntegrationHubClient $hub;
 
     /**
      * Sending documents to Smartcat
      *
-     * @param JobInterface $job
      * @return JobInterface
+     *
      * @throws \Drupal\tmgmt\TMGMTException
+     * @throws EntityStorageException
      */
     public function requestTranslation(JobInterface $job)
     {
-        $this->smartcatApi = new SmartcatApi(
-            $job->getTranslator()->getSetting('account_id'),
-            $job->getTranslator()->getSetting('api_key'),
-            $job->getTranslator()->getSetting('server'),
-        );
+        $this->initApiClients($job->getTranslator());
 
         return $this->requestJobItemsTranslation($job->getItems());
     }
@@ -55,50 +61,69 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
     /**
      * Create a Smartcat project and submit items from a job
      *
-     * @param array $job_items
+     * @param  JobItemInterface[]  $job_items
      * @return JobInterface
+     *
      * @throws \Drupal\Core\Entity\EntityStorageException
+     * @throws TMGMTException
      */
     public function requestJobItemsTranslation(array $job_items)
     {
         /** @var Job $job */
         $job = reset($job_items)->getJob();
-        $files = $this->prepareDataForSending($job);
+
+        $this->initApiClients($job->getTranslator());
 
         try {
-            $workflowStage = $job->getSetting('workflow_stage');
-            $stages = ['Translation'];
-            if ($workflowStage === 'mt-postediting') {
-                $stages[] = 'Postediting';
-            }
-            $projectId = $this->smartcatApi->createProject(
-                $job->getSourceLangcode(),
-                $job->getTargetLangcode(),
-                $stages,
-                $job->id()
-            );
-            if ($workflowStage !== 'manual-translation') {
-                $this->setupMtEngineToSmartcatProject($projectId);
-            }
-            $job->reference = $projectId;
+            $project = $this->getOrCreateProject($job);
+
+            $job->reference = $project->getId();
             $job->save();
-            $job->addMessage('A new project was created. Project ID: @id', ['@id' => $projectId], 'debug');
-        } catch (ClientException $e) {
-            $job->rejected('Failed to create a project in Smartcat. Contact us at support@smartcat.com');
-            \Drupal::logger('tmgmt_smartcat')->error('Failed to create a project in Smartcat.');
+            $job->addMessage('Smartcat project has been initialized. Project ID: @id', ['@id' => $project->getId()], 'debug');
+        } catch (RequestException $e) {
+            $job->rejected('Failed to initialize a project in Smartcat. Contact us at support@smartcat.com');
+            \Drupal::logger('tmgmt_smartcat')->error('@message | Job ID: @job_id | Response: @response', [
+                '@message' => 'An error occurred while initializing a project in Smartcat',
+                '@job_id' => $job->id(),
+                '@response' => $e->getResponse()->getBody()->getContents(),
+            ]);
+
             return $job;
         }
 
-        try {
-            $this->smartcatApi->addDocumentToProject($projectId, $files);
-            $job->submitted(
-                'Job has been successfully submitted for translation. Project ID is: %project_id',
-                array('%project_id' => $projectId)
-            );
-        } catch (ClientException $e) {
-            $job->rejected('Your job has been rejected. Contact us at support@smartcat.com');
-            \Drupal::logger('tmgmt_smartcat')->error('Job has been rejected.');
-            return $job;
+        $translatableItems = $this->prepareDataForSending($job_items);
+
+        foreach ($translatableItems as $translatableItem) {
+            try {
+                $response = $this->hub->import(
+                    $translatableItem,
+                    $project->getId(),
+                    $job->getSourceLangcode(),
+                    $job->getTargetLangcode()
+                );
+
+                $jobItem = $translatableItem->getJobItem();
+
+                if (! is_null($response)) {
+                    $jobItem->active();
+                    $jobItem->save();
+
+                    $document = (new SmartcatDocument())->findByJobItemId($jobItem->id());
+
+                    if (is_null($document)) {
+                        $document = new SmartcatDocument($jobItem->id(), $response->getDocumentId());
+                        $document->store();
+                    }
+                }
+            } catch (RequestException $e) {
+                \Drupal::logger('tmgmt_smartcat')->error('@message | Job ID: @job_id | Job Item ID: @job_item_id | Project ID: @project_id | Message: @message | Response: @response', [
+                    '@message' => 'An error occurred while importing a document into Smartcat',
+                    '@job_id' => $job->id(),
+                    '@job_item_id' => $translatableItem->getJobItem()->id(),
+                    '@project_id' => $project->getId(),
+                    '@response' => $e->getResponse()->getBody()->getContents(),
+                ]);
+            }
         }
 
         return $job;
@@ -107,7 +132,6 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
     /**
      * Checking the connection with Smartcat
      *
-     * @param TranslatorInterface $translator
      * @return AvailableResult
      */
     public function checkAvailable(TranslatorInterface $translator)
@@ -118,42 +142,46 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
 
         return AvailableResult::no(t('@translator is not available. Make sure it is properly <a href=:configured>configured</a>.', [
             '@translator' => $translator->label(),
-            ':configured' => $translator->url(),
+            // ':configured' => $translator->url(),
         ]));
     }
 
     /**
      * Prepare data for sending
      *
-     * @param JobInterface $job
-     * @param $type
-     * @return array
+     * @param  JobItemInterface[]  $jobItems
+     * @return array<TranslatableItem>
      */
-    protected function prepareDataForSending(JobInterface $job, $type = 'json')
+    protected function prepareDataForSending(array $jobItems): array
     {
-        $files = [];
-        foreach ($job->getData() as $key => $jobData) {
-            $fileBaseName = $key;
-            if (isset($jobData['title'][0]['value']['#text']) && !empty($jobData['title'][0]['value']['#text'])) {
-                $fileBaseName = $jobData['title'][0]['value']['#text'];
+        $translatableItems = [];
+
+        foreach ($jobItems as $jobItem) {
+            $translatableItem = new TranslatableItem();
+
+            $translatableItem->setId($jobItem->id());
+            $translatableItem->setName($jobItem->getSourceLabel());
+            $translatableItem->setJobItem($jobItem);
+
+            $items = $this->prepareSingleDataForSending($jobItem->getJob(), 'json', $jobItem->id());
+
+            $segments = [];
+
+            foreach ($items as $itemKey => $value) {
+                $segments[] = new TranslatableItemSegment($itemKey, $value);
             }
-            $fileBaseName = preg_replace("#[[:punct:]]#", "", $fileBaseName);
-            $fileContent = $this->prepareSingleDataForSending($job, $type, $key);
-            if (isset($files[$fileBaseName])) {
-                $fileBaseName .= '-' . rand();
-            }
-            $fileBaseName .= '.' . $type;
-            $files[$fileBaseName] = $fileContent;
+
+            $translatableItem->setSegments($segments);
+
+            $translatableItems[] = $translatableItem;
         }
-        return $files;
+
+        return $translatableItems;
     }
 
     /**
      * Prepare single data for sending
      *
-     * @param JobInterface $job
-     * @param $type
-     * @param $keepOnlyThisIndex
      * @return false|string
      */
     protected function prepareSingleDataForSending(JobInterface $job, $type = 'json', $keepOnlyThisIndex = null)
@@ -161,7 +189,7 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
         $data_service = \Drupal::service('tmgmt.data');
 
         $data = array_filter($data_service->flatten($job->getData()), function ($value) {
-            return !(empty($value['#text']) || (isset($value['#translate']) && $value['#translate'] === FALSE));
+            return ! (empty($value['#text']) || (isset($value['#translate']) && $value['#translate'] === false));
         });
 
         if ($type === 'json') {
@@ -179,7 +207,7 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
             // and then remove the other job items from the flattened data, so that the file will contain
             // only the current job item.
             if ($keepOnlyThisIndex !== null) {
-                if (strpos($key, $keepOnlyThisIndex . $data_service::TMGMT_ARRAY_DELIMITER) !== 0) {
+                if (strpos($key, $keepOnlyThisIndex.$data_service::TMGMT_ARRAY_DELIMITER) !== 0) {
                     continue;
                 }
             }
@@ -188,100 +216,148 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
                 $items[$key] = $value['#text'];
             } else {
                 $items .= str_replace(
-                    array('@key', '@text'),
-                    array($key, $value['#text']),
+                    ['@key', '@text'],
+                    [$key, $value['#text']],
                     '<item key="@key"><text type="text/html"><![CDATA[@text]]></text></item>'
                 );
             }
         }
 
         if ($type === 'json') {
-            return json_encode($items);
+            return $items;
         } else {
-            return '<items>' . $items . '</items>';
+            return '<items>'.$items.'</items>';
         }
     }
 
-    private function setupMtEngineToSmartcatProject(string $smartcatProjectId)
+    private function getOrCreateProject(JobInterface $job): ?Project
     {
-        $selectedMt = NULL;
+        $workflowStage = $job->getSetting('workflow_stage');
 
-        $project = $this->smartcatApi->getProject($smartcatProjectId);
+        if ($job->getReference()) {
+            $projectId = $job->getReference();
+            $project = $this->cat->getProject($projectId);
+        } else {
+            $project = $this->hub->getOrCreateProject(
+                null, 'Drupal TMGMT',
+                $job->getSourceLangcode(),
+                [$job->getTargetLangcode()],
+                $this->getWorkflowStage($workflowStage),
+            );
 
-        $availableProjectMT = $this->smartcatApi->availableProjectMT($smartcatProjectId);
-
-        $targetLocales = $project['targetLanguages'];
-
-        $maybeIntelligentRouting = array_filter($availableProjectMT, function ($mt) {
-            return $mt['Id'] === 'engine:Intelligent Routing';
-        });
-
-        $maybeIntelligentRouting = array_shift($maybeIntelligentRouting);
-
-        if (
-            !is_null($maybeIntelligentRouting) &&
-            count($maybeIntelligentRouting['Languages']) === count($targetLocales)
-        ) {
-            $selectedMt = $maybeIntelligentRouting;
-        }
-
-        if (is_null($selectedMt)) {
-            $maybeGoogle = array_filter($availableProjectMT, function ($mt) {
-                return $mt['Id'] === 'engine:Google NMT';
-            });
-
-            $maybeGoogle = array_shift($maybeGoogle);
-
-            if (
-                !is_null($maybeGoogle) &&
-                count($maybeGoogle['Languages']) === count($targetLocales)
-            ) {
-                $selectedMt = $maybeGoogle;
+            if ($workflowStage !== 'manual-translation') {
+                $this->setupMtEngineToSmartcatProject($project);
             }
         }
 
-        if (is_null($selectedMt)) {
-            foreach ($availableProjectMT as $mt) {
-                if (count($mt['Languages']) === count($targetLocales)) {
-                    $selectedMt = $mt;
+        return $project;
+    }
+
+    private function setupMtEngineToSmartcatProject(Project $project)
+    {
+        $mts = $this->cat->getAvailableProjectMT($project->getId());
+
+        $selectedMT = null;
+
+        $intelligentRouting = array_filter($mts, function ($mt) {
+            return $mt->isIntelligentRouting();
+        });
+
+        /** @var ProjectMT|null $intelligentRouting */
+        $intelligentRouting = $intelligentRouting[0] ?? null;
+
+        if (
+            ! is_null($intelligentRouting) &&
+            $intelligentRouting->languagesCount() === $project->targetLocalesCount()
+        ) {
+            $selectedMT = $intelligentRouting;
+        }
+
+        if (is_null($selectedMT)) {
+            $google = array_filter($mts, function ($mt) {
+                return $mt->isGoogle();
+            });
+
+            /** @var ProjectMT|null $google */
+            $google = $google[0] ?? null;
+
+            if (
+                ! is_null($google) &&
+                $google->languagesCount() === $project->targetLocalesCount()
+            ) {
+                $selectedMT = $google;
+            }
+        }
+
+        if (is_null($selectedMT)) {
+            foreach ($mts as $mt) {
+                if ($mt->languagesCount() === $project->targetLocalesCount()) {
+                    $selectedMT = $mt;
                     break;
                 }
             }
         }
 
-        if (!is_null($selectedMt)) {
-            $this->smartcatApi->setupMtEngines($smartcatProjectId, [
-                $selectedMt
-            ]);
-        } else {
-            \Drupal::logger('tmgmt_smartcat')->error("Failed to setup MT engine to project $smartcatProjectId", [
-                'targetLocales' => $targetLocales,
-                'smartcatProjectId' => $smartcatProjectId,
-                'availableProjectMT' => $availableProjectMT
+        try {
+            $this->cat->setupMtEngine($project->getId(), [$selectedMT->toArray()]);
+        } catch (RequestException $exception) {
+            \Drupal::logger('tmgmt_smartcat')->error("Failed to setup MT engine to project {$project->getId()}. Response: @response", [
+                '@response' => $exception->getResponse()->getBody()->getContents(),
             ]);
         }
 
-        // adding pre translation rules
+        $rule = ['ruleType' => 'MT', 'order' => 1];
 
-        $rule = [
-            'ruleType' => 'MT',
-            'order' => 1
-        ];
-
-        $translationStage = array_filter($project['workflowStages'], function ($stage) {
-            return $stage['stageType'] === 'translation';
+        $translationStage = array_filter($project->getWorkflowStages(), function ($stage) {
+            return $stage->isTranslation();
         });
 
-        $translationStage = array_shift($translationStage);
+        $translationStage = $translationStage[0] ?? null;
 
-        if (!is_null($translationStage)) {
-            $rule['confirmAtWorkflowStep'] = $translationStage['id'];
-        } else {
-            \Drupal::logger('tmgmt_smartcat')->error('Failed finding translation workflow step. Pretransaltion rule will be without automatic confirmation');
+        if (! is_null($translationStage)) {
+            $rule['confirmAtWorkflowStep'] = $translationStage->getId();
         }
 
-        $this->smartcatApi->setupPreTranslationRules($smartcatProjectId, [
-            $rule
-        ]);
+        try {
+            $this->cat->setupPreTranslationRules($project->getId(), [$rule]);
+        } catch (RequestException $exception) {
+            \Drupal::logger('tmgmt_smartcat')->error('Failed finding translation workflow step. Pretransaltion rule will be without automatic confirmation. Response: @response', [
+                '@response' => $exception->getResponse()->getBody()->getContents(),
+            ]);
+        }
+    }
+
+    private function getWorkflowStage(string $name): array
+    {
+        $stages = [
+            'mt' => [1],
+            'mt-postediting' => [1, 7],
+            'manual-translation' => [],
+        ];
+
+        return $stages[$name] ?? [];
+    }
+
+    private function initApiClients(Translator $translator)
+    {
+        $credentials = $this->getApiCredentials($translator);
+
+        $this->cat = new SmartcatClient(...$credentials);
+
+        $this->hub = new IntegrationHubClient(...$credentials);
+    }
+
+    private function getApiCredentials(Translator $translator): array
+    {
+        return $this->localApiCredentials() ?? [
+            'accountId' => $translator->getSetting('account_id'),
+            'secretKey' => $translator->getSetting('api_key'),
+            'server' => $translator->getSetting('server'),
+        ];
+    }
+
+    private function localApiCredentials(): ?array
+    {
+        return null;
     }
 }

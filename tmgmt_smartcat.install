@@ -1,0 +1,8 @@
+<?php
+
+use Drupal\tmgmt_smartcat\Database\Migrations;
+
+function tmgmt_smartcat_schema()
+{
+    Migrations::run();
+}

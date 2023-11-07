@@ -7,3 +7,4 @@ dependencies:
   - tmgmt (>=8.x-1.0-rc2)
   - tmgmt_file
 type: module
+install: tmgmt_smartcat_init
