@@ -9,6 +9,8 @@
  * @author   Mikhail Protasebich <m.protasevich@smartcat.ai>
  */
 
+use Drupal\tmgmt_smartcat\Database\Migrations;
+
 /**
  * Implements hook_cron()
  *
@@ -16,6 +18,9 @@
  */
 function tmgmt_smartcat_cron()
 {
+    // FIXME: Replace with hook_update_N()
+    Migrations::run();
+
     /** @var \Drupal\tmgmt_smartcat\Services\TranslationsExporter $translationsExporter */
     $translationsExporter = \Drupal::service('tmgmt_smartcat.translations_exporter');
 

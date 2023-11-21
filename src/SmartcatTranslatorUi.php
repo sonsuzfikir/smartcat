@@ -20,8 +20,6 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
     /**
      * Configuration form for Smartcat
      *
-     * @param array $form
-     * @param FormStateInterface $form_state
      * @return array
      */
     public function buildConfigurationForm(array $form, FormStateInterface $form_state)
@@ -43,16 +41,16 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
                 'EA' => t('Asia'),
             ],
         ];
-        $form['account_id'] = array(
+        $form['account_id'] = [
             '#type' => 'textfield',
             '#title' => t('Smartcat Account ID'),
             '#default_value' => $translator->getSetting('account_id'),
-        );
-        $form['api_key'] = array(
+        ];
+        $form['api_key'] = [
             '#type' => 'textfield',
             '#title' => t('Smartcat API Secret Key'),
             '#default_value' => $translator->getSetting('api_key'),
-        );
+        ];
 
         return $form;
     }
@@ -60,8 +58,6 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
     /**
      * Validation for the Smartcat configuration form
      *
-     * @param array $form
-     * @param FormStateInterface $form_state
      * @return void
      */
     public function validateConfigurationForm(array &$form, FormStateInterface $form_state)
@@ -88,7 +84,6 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
     /**
      * Form for uploading completed translations from Smartcat
      *
-     * @param JobInterface $job
      * @return array[]
      */
     public function checkoutInfo(JobInterface $job)
@@ -109,8 +104,6 @@ class SmartcatTranslatorUi extends TranslatorPluginUiBase
     /**
      * Action for downloading translated documents from Smartcat
      *
-     * @param array $form
-     * @param FormStateInterface $form_state
      * @return void
      */
     public function download(array $form, FormStateInterface $form_state)

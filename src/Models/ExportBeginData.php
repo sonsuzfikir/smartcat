@@ -5,8 +5,11 @@ namespace Drupal\tmgmt_smartcat\Models;
 class ExportBeginData implements DataInterface
 {
     private $jobItemId;
+
     private string $accountId;
+
     private string $projectId;
+
     private string $targetLocale;
 
     public function __construct($jobItemId, string $accountId, string $projectId, string $targetLocale)
@@ -30,13 +33,10 @@ class ExportBeginData implements DataInterface
         return $this->jobItemId;
     }
 
-    /**
-     * @param int $jobItemId
-     * @return ExportBeginData
-     */
     public function setJobItemId(int $jobItemId): ExportBeginData
     {
         $this->jobItemId = $jobItemId;
+
         return $this;
     }
 
@@ -48,6 +48,7 @@ class ExportBeginData implements DataInterface
     public function setAccountId(string $accountId): ExportBeginData
     {
         $this->accountId = $accountId;
+
         return $this;
     }
 
@@ -59,6 +60,7 @@ class ExportBeginData implements DataInterface
     public function setProjectId(string $projectId): ExportBeginData
     {
         $this->projectId = $projectId;
+
         return $this;
     }
 
@@ -70,6 +72,7 @@ class ExportBeginData implements DataInterface
     public function setTargetLocale(string $targetLocale): ExportBeginData
     {
         $this->targetLocale = $targetLocale;
+
         return $this;
     }
 
@@ -79,7 +82,7 @@ class ExportBeginData implements DataInterface
             'drupalJobItemId' => $this->jobItemId,
             'scAccountId' => $this->accountId,
             'scProjectId' => $this->projectId,
-            'targetLanguage' => $this->targetLocale
+            'targetLanguage' => $this->targetLocale,
         ];
     }
 }

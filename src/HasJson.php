@@ -8,7 +8,7 @@ trait HasJson
     {
         $content = $response->getBody()->getContents();
 
-        if (!$this->isJson($content)) {
+        if (! $this->isJson($content)) {
             return null;
         }
 
@@ -18,6 +18,7 @@ trait HasJson
     protected function isJson($string): bool
     {
         json_decode($string);
+
         return json_last_error() === JSON_ERROR_NONE;
     }
 }

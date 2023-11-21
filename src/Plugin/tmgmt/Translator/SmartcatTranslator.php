@@ -17,6 +17,7 @@ use Drupal\tmgmt\TMGMTException;
 use Drupal\tmgmt\Translator\AvailableResult;
 use Drupal\tmgmt\TranslatorInterface;
 use Drupal\tmgmt\TranslatorPluginBase;
+use Drupal\tmgmt_smartcat\Database\Migrations;
 use Drupal\tmgmt_smartcat\IntegrationHubClient;
 use Drupal\tmgmt_smartcat\Models\Project;
 use Drupal\tmgmt_smartcat\Models\ProjectMT;
@@ -53,6 +54,9 @@ class SmartcatTranslator extends TranslatorPluginBase implements ContinuousTrans
      */
     public function requestTranslation(JobInterface $job)
     {
+        // FIXME: Replace with hook_update_N()
+        Migrations::run();
+
         $this->initApiClients($job->getTranslator());
 
         return $this->requestJobItemsTranslation($job->getItems());

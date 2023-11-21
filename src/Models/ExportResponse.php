@@ -4,8 +4,7 @@ namespace Drupal\tmgmt_smartcat\Models;
 
 class ExportResponse
 {
-
-    /** @var array<ExportedItem>|null  */
+    /** @var array<ExportedItem>|null */
     private ?array $items;
 
     private ?array $properties;
@@ -22,7 +21,7 @@ class ExportResponse
     public static function create(array $data): ExportResponse
     {
         return new self(
-            !empty($data['items']) ? array_map(fn($item) => ExportedItem::create($item), $data['items']) : null,
+            ! empty($data['items']) ? array_map(fn ($item) => ExportedItem::create($item), $data['items']) : null,
             $data['properties'] ?? null,
             ExportInfoData::create($data['exportInfo'])
         );
@@ -36,6 +35,7 @@ class ExportResponse
     public function setItems(?array $items): ExportResponse
     {
         $this->items = $items;
+
         return $this;
     }
 
@@ -47,6 +47,7 @@ class ExportResponse
     public function setProperties(?array $properties): ExportResponse
     {
         $this->properties = $properties;
+
         return $this;
     }
 
@@ -58,11 +59,12 @@ class ExportResponse
     public function setExportInfo(ExportInfoData $exportInfo): ExportResponse
     {
         $this->exportInfo = $exportInfo;
+
         return $this;
     }
 
     public function hasItems(): bool
     {
-        return !empty($this->items);
+        return ! empty($this->items);
     }
 }

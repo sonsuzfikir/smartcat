@@ -32,6 +32,7 @@ class DocumentWorkflowStage
     public function setId(string $id): self
     {
         $this->id = $id;
+
         return $this;
     }
 
@@ -44,11 +45,12 @@ class DocumentWorkflowStage
     }
 
     /**
-     * @param float|int $progress
+     * @param  float|int  $progress
      */
     public function setProgress($progress): self
     {
         $this->progress = $progress;
+
         return $this;
     }
 
@@ -60,6 +62,7 @@ class DocumentWorkflowStage
     public function setStatus(string $status): self
     {
         $this->status = $status;
+
         return $this;
     }
 }

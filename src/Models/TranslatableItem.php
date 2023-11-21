@@ -23,6 +23,7 @@ class TranslatableItem
     public function setName(string $name): TranslatableItem
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -34,6 +35,7 @@ class TranslatableItem
     public function setSegments(array $segments): TranslatableItem
     {
         $this->segments = $segments;
+
         return $this;
     }
 
@@ -45,6 +47,7 @@ class TranslatableItem
     public function setId(string $id): TranslatableItem
     {
         $this->id = $id;
+
         return $this;
     }
 
@@ -63,6 +66,7 @@ class TranslatableItem
     public function setJobItem(JobItemInterface $jobItem): self
     {
         $this->jobItem = $jobItem;
+
         return $this;
     }
 }

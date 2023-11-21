@@ -10,6 +10,7 @@ class ImportDocumentResponse
     {
         $response = new ImportDocumentResponse();
         $response->setDocumentId($data['documentId']);
+
         return $response;
     }
 
@@ -21,6 +22,7 @@ class ImportDocumentResponse
     public function setDocumentId(string $documentId): ImportDocumentResponse
     {
         $this->documentId = $documentId;
+
         return $this;
     }
 }

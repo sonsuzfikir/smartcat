@@ -5,6 +5,7 @@ namespace Drupal\tmgmt_smartcat\Models;
 class TranslatableItemSegment
 {
     private string $key;
+
     private string $sourceValue;
 
     public function __construct(string $key, string $sourceValue)
@@ -21,6 +22,7 @@ class TranslatableItemSegment
     public function setKey(string $key): TranslatableItemSegment
     {
         $this->key = $key;
+
         return $this;
     }
 
@@ -32,6 +34,7 @@ class TranslatableItemSegment
     public function setSourceValue(string $sourceValue): TranslatableItemSegment
     {
         $this->sourceValue = $sourceValue;
+
         return $this;
     }
 
@@ -41,7 +44,7 @@ class TranslatableItemSegment
             'id' => $this->key,
             'sourceText' => $this->sourceValue,
             'format' => 'auto',
-            'existingTranslation' => ''
+            'existingTranslation' => '',
         ];
     }
 }

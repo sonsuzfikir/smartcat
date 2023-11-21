@@ -5,9 +5,13 @@ namespace Drupal\tmgmt_smartcat\Models;
 class ExportedItem
 {
     private string $id;
+
     private ?string $context;
+
     private string $source;
+
     private string $translation;
+
     private ?array $properties;
 
     public function __construct(string $id, ?string $context, string $source, string $translation, ?array $properties)
@@ -38,6 +42,7 @@ class ExportedItem
     public function setId(string $id): ExportedItem
     {
         $this->id = $id;
+
         return $this;
     }
 
@@ -49,6 +54,7 @@ class ExportedItem
     public function setContext(?string $context): ExportedItem
     {
         $this->context = $context;
+
         return $this;
     }
 
@@ -60,6 +66,7 @@ class ExportedItem
     public function setSource(string $source): ExportedItem
     {
         $this->source = $source;
+
         return $this;
     }
 
@@ -71,6 +78,7 @@ class ExportedItem
     public function setTranslation(string $translation): ExportedItem
     {
         $this->translation = $translation;
+
         return $this;
     }
 
@@ -82,6 +90,7 @@ class ExportedItem
     public function setProperties(?array $properties): ExportedItem
     {
         $this->properties = $properties;
+
         return $this;
     }
 }

@@ -5,16 +5,25 @@ namespace Drupal\tmgmt_smartcat\Models;
 class ExportInfoData implements DataInterface
 {
     public const NotDisassembled = 1;
+
     public const ExportStarted = 2;
+
     public const Complete = 3;
+
     public const Failed = 4;
 
     private ?string $accountId;
+
     private ?string $documentId;
+
     private ?string $exportId;
+
     private string $mode;
+
     private int $exportType;
+
     private int $exportStatus;
+
     private ?string $failureReason;
 
     public function __construct(?string $accountId, ?string $documentId, ?string $exportId, string $mode, int $exportType, int $exportStatus, ?string $failureReason)
@@ -49,6 +58,7 @@ class ExportInfoData implements DataInterface
     public function setAccountId(string $accountId): ExportInfoData
     {
         $this->accountId = $accountId;
+
         return $this;
     }
 
@@ -60,6 +70,7 @@ class ExportInfoData implements DataInterface
     public function setDocumentId(?string $documentId): ExportInfoData
     {
         $this->documentId = $documentId;
+
         return $this;
     }
 
@@ -71,6 +82,7 @@ class ExportInfoData implements DataInterface
     public function setExportId(?string $exportId): ExportInfoData
     {
         $this->exportId = $exportId;
+
         return $this;
     }
 
@@ -82,6 +94,7 @@ class ExportInfoData implements DataInterface
     public function setMode(string $mode): ExportInfoData
     {
         $this->mode = $mode;
+
         return $this;
     }
 
@@ -93,6 +106,7 @@ class ExportInfoData implements DataInterface
     public function setExportType(int $exportType): ExportInfoData
     {
         $this->exportType = $exportType;
+
         return $this;
     }
 
@@ -104,6 +118,7 @@ class ExportInfoData implements DataInterface
     public function setExportStatus(int $exportStatus): ExportInfoData
     {
         $this->exportStatus = $exportStatus;
+
         return $this;
     }
 
@@ -115,6 +130,7 @@ class ExportInfoData implements DataInterface
     public function setFailureReason(?string $failureReason): ExportInfoData
     {
         $this->failureReason = $failureReason;
+
         return $this;
     }
 
@@ -132,7 +148,7 @@ class ExportInfoData implements DataInterface
             'mode' => $this->mode,
             'exportType' => $this->exportType,
             'exportStatus' => $this->exportStatus,
-            'failureReason' => $this->failureReason
+            'failureReason' => $this->failureReason,
         ];
     }
 }
